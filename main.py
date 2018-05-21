@@ -61,9 +61,9 @@ def search_porn(key_word):
         if res.status > 200:
             iter_flag = False
             print('cannot access the website.')
-            exit(1)
-        soup = BeautifulSoup(res.data.decode(), 'html.parser')
+            return 'error'
 
+        soup = BeautifulSoup(res.data.decode(), 'html.parser')
         data_list = soup.find('div', attrs={'class': 'data-list'})
         if data_list:
 
@@ -130,5 +130,8 @@ def search_porn(key_word):
 
 #    def download_porn(self):
 
+
 if __name__ == "__main__":
-    search_porn("FHD")
+    return_code = search_porn("FHD")
+    if return_code > 200:
+        print()
