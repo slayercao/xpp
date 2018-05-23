@@ -17,6 +17,11 @@ import time
 home = "https://btso.pw/"
 tags = home + "tags"
 search = home + "search/"
+SUCCESS = 100
+FAIL = 300
+
+# Porn download urls of search result
+pornList = list()
 
 
 def search_porn(key_word):
@@ -25,14 +30,11 @@ def search_porn(key_word):
     # Name of an av actress
     # actress = list()
 
-    # Porn download urls of search result
-    # pornList = list()
-
     # Key word of porn, it could be an actress's name, or the porn id, or key words of a porn, etc.
     # keyWord = "FHD"
     # key_word = input("输入关键字")
 
-    page = 0
+    page_idx = 1
     num_of_link = 0
     iter_flag = True
     workbook = xlwt.Workbook(encoding='ascii')
@@ -42,8 +44,8 @@ def search_porn(key_word):
     http = urllib3.PoolManager()
 
     while iter_flag:
-        if page > 0:
-            url = url + "/page/" + str(page)
+        if page_idx > 1:
+            url = url + "/page_idx/" + str(page_idx)
 
         res = http.request('GET', url,
                            headers={
@@ -59,14 +61,15 @@ def search_porn(key_word):
                            })
 
         if res.status > 200:
-            iter_flag = False
             print('cannot access the website.')
-            return 'error'
+            break
 
         soup = BeautifulSoup(res.data.decode(), 'html.parser')
         data_list = soup.find('div', attrs={'class': 'data-list'})
-        if data_list:
+        next_page = soup.find('a', attrs={'name': 'nextpage'})
 
+        if data_list:
+            print('start to parse the ' + str(page_idx) + 'st page')
             # print(data_list)
             raw_data = data_list.find_all('a')
             # print(raw_data)
@@ -74,6 +77,13 @@ def search_porn(key_word):
                 title = data.get('title')
 
                 link = data.get('href')
+
+                total_info = data.find('div', class_='col-xs-12 size-date visible-xs-block').string.split('/')
+                info1 = total_info[0].strip().split(':')
+                size = info1[1]
+
+                info2 = total_info[1].strip().split(':')
+                date = info2[1]
 
                 av_page = http.request('GET', link,
                                        headers={
@@ -87,31 +97,39 @@ def search_porn(key_word):
                                            # "Cache-Control": "max-age=0",
                                            # "Upgrade-Insecure-Requests": "1"
                                        })
+                if av_page.status > 200:
+                    print('cannot access the page_idx of this porn.')
+                    break
 
-                total_info = data.find('div', class_='col-xs-12 size-date visible-xs-block').string.split('/')
-                info1 = total_info[0].strip().split(':')
-                size = info1[1]
+                page_soup = BeautifulSoup(av_page.data.decode(), 'html.parser')
+                porn_magnet_link = page_soup.find('textarea', attrs={'class': 'magnet-link'}).string
 
-                info2 = total_info[1].strip().split(':')
-                date = info2[1]
-
-                # print(link + "\t" + title + "\t" + size + "\t" + date)
-                worksheet.write(num_of_link, 0, label=link)
-                worksheet.write(num_of_link, 1, label=size)
-                worksheet.write(num_of_link, 2, label=date)
-                worksheet.write(num_of_link, 3, label=title)
+                worksheet.write(num_of_link, 0, label=title)
+                worksheet.write(num_of_link, 1, label=porn_magnet_link)
+                worksheet.write(num_of_link, 2, label=size)
+                worksheet.write(num_of_link, 3, label=date)
+                # worksheet.write(num_of_link, 4, label=porn_magnet_link)
+                print(str(num_of_link) + "\t" + title + "\t" + porn_magnet_link + "\t" + size + "\t" + date)
                 num_of_link += 1
 
-            next_page = soup.find('a', attrs={'name': 'nextpage'})
-            if next_page:
-                page += 1
-                time.sleep(5000)
-            else:
-                iter_flag = False
+                time.sleep(2)
+            print('finished parsing the ' + str(page_idx) + 'st page.')
         else:
-            iter_flag = False
+            print('search result handle complete, no more to process.')
+            break
+
+        if next_page:
+            page_idx += 1
+            print('next page is the ' + str(page_idx) + 'st page.')
+            time.sleep(2)
+        else:
+            print('no more pages to process.')
+            break
 
     workbook.save('d:/search_result.xls')
+
+
+# def parse_porn_magnet_link():
 
 
 # print(pornList)
@@ -132,6 +150,4 @@ def search_porn(key_word):
 
 
 if __name__ == "__main__":
-    return_code = search_porn("FHD")
-    if return_code > 200:
-        print()
+    search_porn("FHD")
