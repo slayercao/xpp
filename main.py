@@ -6,7 +6,9 @@ Author: slayer.
 """
 
 import sys
+import urllib
 
+import chardet
 import certifi
 import requests
 import urllib3
@@ -34,18 +36,25 @@ def search_porn(key_word):
     # keyWord = "FHD"
     # key_word = input("输入关键字")
 
+    # if chardet.detect(key_word)='unicode'
     page_idx = 1
-    num_of_link = 0
+    data_idx = 0
     iter_flag = True
     workbook = xlwt.Workbook(encoding='ascii')
     worksheet = workbook.add_sheet(key_word + '_search_result')
-    url = search + key_word
+    # url_temp = search + key_word
+    url_temp = search + urllib.parse.quote(key_word)
+    url = url_temp
+    print(url)
+    # return
 
     http = urllib3.PoolManager()
+    result_file_path = "d:/result/" + key_word + ".xls"
 
     while iter_flag:
         if page_idx > 1:
-            url = url + "/page_idx/" + str(page_idx)
+            url = url_temp + "/page/" + str(page_idx)
+            print(url)
 
         res = http.request('GET', url,
                            headers={
@@ -104,14 +113,14 @@ def search_porn(key_word):
                 page_soup = BeautifulSoup(av_page.data.decode(), 'html.parser')
                 porn_magnet_link = page_soup.find('textarea', attrs={'class': 'magnet-link'}).string
 
-                worksheet.write(num_of_link, 0, label=title)
-                worksheet.write(num_of_link, 1, label=porn_magnet_link)
-                worksheet.write(num_of_link, 2, label=size)
-                worksheet.write(num_of_link, 3, label=date)
-                # worksheet.write(num_of_link, 4, label=porn_magnet_link)
-                print(str(num_of_link) + "\t" + title + "\t" + porn_magnet_link + "\t" + size + "\t" + date)
-                num_of_link += 1
-
+                worksheet.write(data_idx, 0, label=title)
+                worksheet.write(data_idx, 1, label=porn_magnet_link)
+                worksheet.write(data_idx, 2, label=size)
+                worksheet.write(data_idx, 3, label=date)
+                # worksheet.write(data_idx, 4, label=porn_magnet_link)
+                print(str(data_idx) + "\t" + title + "\t" + porn_magnet_link + "\t" + size + "\t" + date)
+                data_idx += 1
+                workbook.save(result_file_path)
                 time.sleep(2)
             print('finished parsing the ' + str(page_idx) + 'st page.')
         else:
@@ -119,6 +128,7 @@ def search_porn(key_word):
             break
 
         if next_page:
+            # print(next_page)
             page_idx += 1
             print('next page is the ' + str(page_idx) + 'st page.')
             time.sleep(2)
@@ -126,7 +136,7 @@ def search_porn(key_word):
             print('no more pages to process.')
             break
 
-    workbook.save('d:/search_result.xls')
+    workbook.save(result_file_path)
 
 
 # def parse_porn_magnet_link():
@@ -150,4 +160,4 @@ def search_porn(key_word):
 
 
 if __name__ == "__main__":
-    search_porn("FHD")
+    search_porn("原来是茜公")
